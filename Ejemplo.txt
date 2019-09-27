@@ -1,0 +1,14 @@
+**********************************
+*PROGRAMA DE EJEMPLO
+*programa
+**********************************
+ DDRA EQU $1001
+ ORG $8000
+ LDS #$03FF
+ LDAA #$00
+*********P
+	LDAA #0123
+STAA $DDRA
+poc $518
+ end
+END
