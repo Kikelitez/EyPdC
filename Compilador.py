@@ -1,4 +1,3 @@
-# -*- coding: utf-8 -*-
 import re
 import xlrd
 
@@ -26,12 +25,13 @@ Mnem = []
 dir_txt = 'C:/Users/Kike/Desktop/Proyecto EyPC/Ejemplo.txt'   
 dir_Exc = "C:/Users/Kike/Desktop/Proyecto EyPC/68HC11.xlsx"
 
+#Método que inserta una lista en una lista
 def Lista(lis):
     
     l=[]
     lis.append(l)
     return lis
-
+#Método que elimina impurezas en la lista 
 def RemueveL(lista):
     while [] in lista: lista.remove([])
     return lista
@@ -60,7 +60,8 @@ def CargaExcel(Archivo):
                 Mnem[rownum].append(sheet.cell(rownum, 20).value)
     
     RemueveL(Mnem)
-    
+   
+#Método que elimina impurezas en la regex
 def Remueve(X):
    while " " in X: X.remove(" ")
    while "\t" in X: X.remove("\t")
@@ -70,6 +71,7 @@ def Remueve(X):
    
    return X
 
+#Método que separa los números de los símbolos
 def Separa(arg):
     
     s=re.split("(\$)|(\#\$)|(\#)",arg)
@@ -138,7 +140,7 @@ def Registra(Archivo):
                 Err.append(("009","Linea "+str(cnt)))
                 linea = f.readline()
                                
- 
+#Método que regresa el valor para buscar en los Mnemónicos
 def Modos(arg):
     
     Modos={
@@ -152,13 +154,10 @@ def Modos(arg):
             }
     
     print("\n",arg)
-    
-    
-        
-        
-        
+      
     return 0
-    
+
+#Método que compara los valores del registro con los mnemónicos
 def Compara():
     #Lista donde se guardan los valores de la comparación
     L=[]
@@ -169,11 +168,10 @@ def Compara():
             b=Mnem[j][0]
             #Si coincide, añadimos los valores según el modo de direccionamiento
             if a==b:
-                #
                 Modos(Reg[i][2])
                 print("\nCoincidencia en ",j)
 
-
+#Método que inicia el proceso
 def main():
     CargaExcel(dir_Exc)
     Registra(dir_txt)
