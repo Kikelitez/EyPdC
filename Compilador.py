@@ -1,7 +1,6 @@
 # -*- coding: utf-8 -*-
 import re
 import xlrd
-import numpy
 
 #Array para guardar los errores durante el proceso
 Err=[]
@@ -62,18 +61,20 @@ def CargaExcel(Archivo):
     
     RemueveL(Mnem)
     
-def Remueve(linea):
-   X=re.split("(\s)+",linea)
+def Remueve(X):
    while " " in X: X.remove(" ")
    while "\t" in X: X.remove("\t")
    while "" in X: X.remove("")
    while "\n" in X: X.remove("\n")
+   while None in X:X.remove(None)
+   
    return X
 
 def Separa(arg):
-    if(len(arg)==6):
-        print(arg[0]+arg[1])
-    return
+    
+    s=re.split("(\$)|(\#\$)|(\#)",arg)
+    Remueve(s)
+    return s
    
 def Registra(Archivo):
 #Mientras se pueda abrir leemos linea a linea y contamos los datos
@@ -93,8 +94,8 @@ def Registra(Archivo):
             if len(end)!=0:
                 
                 #print(cnt,"FIN")
-                linea = f.readline()
-
+                r=Remueve(re.split("(\s)+",linea))
+                Reg.append(r)
                 break
             #Verificamos que sea un comentario 
             elif len(Com)!=0:
@@ -106,50 +107,82 @@ def Registra(Archivo):
             elif len(Cons)!=0:
             
                 cnt+=1
-                r=Remueve(linea)
+                r=Remueve(re.split("(\s)+",linea))
                 Const[r[0]]=r[2]
                 #print(cnt,"Es Constante")
                 linea = f.readline()
             #Verificamos que sea una variable    
             elif len(Var)!=0:
                 
-                r=Remueve(linea)
+                r=Remueve(re.split("(\s)+",linea))
                 Vars[r[0]]=r[2]
                 cnt+=1
                 #print(cnt,"Es Variable")
                 linea = f.readline()
             #Verificamos que cuente con al menos un espacio
             elif len(Esp)!=0:
-                r=Remueve(linea)
-                Separa(r[1])
+                r=Remueve(re.split("(\s)+",linea))
+                s=Separa(r[1])
                 cnt+=1
-                print(cnt,"Gud",linea)  
+                r[1]=s[1]
+                r.append(s[0])
+                #print(cnt,"Gud",linea)  
                 Reg.append(r)
                 linea = f.readline()
             
             #Si no hay espacio guardamos un error   
             else:
                 cnt+=1
-                r=Remueve(linea)
-                print(r)
-                Err.append(("009",cnt))
-                #print("Error")
+                r=Remueve(re.split("(\s)+",linea))
+                Reg.append(r)
+                Err.append(("009","Linea "+str(cnt)))
                 linea = f.readline()
                                
  
+def Modos(arg):
     
+    Modos={
+            1: "a",
+            2: "b",
+            3: "c",
+            4: "d",
+            5: "d",
+            6: "e",
+            7: "f"
+            }
+    
+    print("\n",arg)
+    
+    
+        
+        
+        
+    return 0
     
 def Compara():
-    #for i in range(len(Mnem)-1):
-        #print(Mnem[i][0])
-    return 0
-                        
+    #Lista donde se guardan los valores de la comparación
+    L=[]
+    #Compara los mnemónicos del registro con los del Excel
+    for i in range(len(Reg)-1):
+        a=Reg[i][0].lower()
+        for j in range(len(Mnem)-1):
+            b=Mnem[j][0]
+            #Si coincide, añadimos los valores según el modo de direccionamiento
+            if a==b:
+                #
+                Modos(Reg[i][2])
+                print("\nCoincidencia en ",j)
 
-CargaExcel(dir_Exc)
-Registra(dir_txt)
-Compara()
-print("Registro",Reg)
-print("Errores:",Err)      
+
+def main():
+    CargaExcel(dir_Exc)
+    Registra(dir_txt)
     
-
-              
+    if Reg[len(Reg)-1][0]!="END":
+        Err.append("010")
+    
+    print("Registro: ",Reg)
+    Compara()
+                  
+    
+main()

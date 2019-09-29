@@ -3,12 +3,11 @@
 *programa
 **********************************
  DDRA EQU $1001
+ ORDEN	EQU	$000D
+ PACTL EQU $1026
  ORG $8000
  LDS #$03FF
- LDAA #$00
 *********P
 	LDAA #0123
-STAA $DDRA
-poc $518
- end
-END
+ STAA $DDRA
+  END
