@@ -151,11 +151,11 @@ def Modos(arg):
     
     Modos={
             "#$": 1, #IMM
-            "DIR": 2 , #DIR
+            "$": 2 , #DIR
             "INDX": 3, #INDX
             "INDY" : 4, #INDY
             "$": 5, #EXT
-            "INH": 6, #INH
+            "": 6, #INH
             "REL" : 7 #REL
             }
     
@@ -170,26 +170,32 @@ def Compara():
     #Compara los mnemónicos del registro con los del Excel
     for i in range(len(Reg)-1):
         a=Reg[i][0].lower()
-        x=Const.get(Reg[i][1])
         k=0
+        x=re.findall(r"[G-Zg-z]+",Reg[i][1])
         for j in range(len(Mnem)-1):
             b=Mnem[j][0]
+            
             #Si coincide, añadimos los valores según el modo de direccionamiento
             if a==b:
-                L.append(str(Mnem[j][Modos(Reg[i][2])])) 
+                L.append(str(Mnem[j][Modos(Reg[i][2])]))
+                #Si hay coincidencias con letras superiores a F 
+                if len(x)!=0 and Reg[i][1] not in Const :
+                    
+                    Err.append(("001","Linea "+ str(Reg[i][3])))
+                    
+                elif Reg[i][1] in Const:
                 
-                if x!=None:
-                   L.append(Const.get(Reg[i][1]))
-                   break
-                   Err.append(("001",Reg[i][1]))
-                L.append(Reg[i][1])
+                    L.append(Const.get(Reg[i][1]))
+                    
+                else:
+                    
+                    L.append(Reg[i][1])
+                                    
             else:
                 k+=1
 #Si no encontró el mnemónico, y el registro no se encuentra en palabras reservadas hay error
         if k==144 and Reg[i][0] not in Reser:
             Err.append(("004","Linea "+ str(Reg[i][3])))
-        #if x!=None:
-                    #L.append(Const.get(Reg[i][1]))
     return L
                
  
