@@ -9,6 +9,8 @@ Vars={}
 Const={}
 #Lista para guardar los mnemónicos registrados
 Reg=[]
+#Palabras reservadas
+Reser=["ORG","EQU","FCB","END"]
 #Diccionario de Errores
 Errores={"001" : "Constante Inexistente",
          "002" : "Variable Inexistente",
@@ -74,7 +76,6 @@ def Remueve(X):
 
 #Método que separa los números de los símbolos
 def Separa(arg):
-    
     s=re.split("(\$)|(\#\$)|(\#)",arg)
     Remueve(s)
     return s
@@ -111,14 +112,16 @@ def Registra(Archivo):
             
                 cnt+=1
                 r=Remueve(re.split("(\s)+",linea))
-                Const[r[0]]=r[2]
+                r[2]=Separa(r[2])
+                Const[r[0]]=r[2][1]
                 #print(cnt,"Es Constante")
                 linea = f.readline()
             #Verificamos que sea una variable    
             elif len(Var)!=0:
                 
                 r=Remueve(re.split("(\s)+",linea))
-                Vars[r[0]]=r[2]
+                r[2]=Separa(r[2])
+                Vars[r[0]]=r[2][1]
                 cnt+=1
                 #print(cnt,"Es Variable")
                 linea = f.readline()
@@ -129,6 +132,7 @@ def Registra(Archivo):
                 cnt+=1
                 r[1]=s[1]
                 r.append(s[0])
+                r.append(cnt)
                 #print(cnt,"Gud",linea)  
                 Reg.append(r)
                 linea = f.readline()
@@ -137,6 +141,7 @@ def Registra(Archivo):
             else:
                 cnt+=1
                 r=Remueve(re.split("(\s)+",linea))
+                r.append(cnt)
                 Reg.append(r)
                 Err.append(("009","Linea "+str(cnt)))
                 linea = f.readline()
@@ -165,32 +170,61 @@ def Compara():
     #Compara los mnemónicos del registro con los del Excel
     for i in range(len(Reg)-1):
         a=Reg[i][0].lower()
+        x=Const.get(Reg[i][1])
+        k=0
         for j in range(len(Mnem)-1):
             b=Mnem[j][0]
             #Si coincide, añadimos los valores según el modo de direccionamiento
             if a==b:
-                L.append(str(Mnem[j][Modos(Reg[i][2])]))
+                L.append(str(Mnem[j][Modos(Reg[i][2])])) 
+                
+                if x!=None:
+                   L.append(Const.get(Reg[i][1]))
+                   break
+                   Err.append(("001",Reg[i][1]))
                 L.append(Reg[i][1])
+            else:
+                k+=1
+#Si no encontró el mnemónico, y el registro no se encuentra en palabras reservadas hay error
+        if k==144 and Reg[i][0] not in Reser:
+            Err.append(("004","Linea "+ str(Reg[i][3])))
+        #if x!=None:
+                    #L.append(Const.get(Reg[i][1]))
     return L
                
  
 def Imprime(L):
-    
+
+    j=0
     for i in range(len(L)):
+        punto=re.findall(r"[0-9]*.*(\.)0",L[i])
         
-        print("\n",int(Reg[0][1])+i,"\t",L[i],"\n")
+        if len(punto)>0:
+            L[i]=L[i][0:2]
         
-    
+        if len(L[i])==2:
+            print("\n",int(Reg[0][1])+i+j,"\t",L[i],"\n")
+
+            
+        else:
+            print("\n",int(Reg[0][1])+i+j,"\t",L[i][0:2],"\n")
+            j+=1
+            print("\n",int(Reg[0][1])+i+j,"\t",L[i][2:4],"\n")
+            
+            
 #Método que inicia el proceso
 def main():
     CargaExcel(dir_Exc)
     Registra(dir_txt)
     
-    if Reg[len(Reg)-1][0]!="END|end":
+    if Reg[len(Reg)-1][0]!="END" and Reg[len(Reg)-1][0].lower()!="end":
         Err.append("010")
-    
-    print("Registro: ",Reg)
-         
+        
+    print("\nRegistro: ",Reg)
+    print("\nConstantes: ",Const)
+    print("\nVariables: ",Vars)
     Imprime(Compara())
+    
+    print("\nErrores: ",Err)
     
 main()
