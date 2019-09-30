@@ -1,3 +1,4 @@
+# -*- coding: utf-8 -*-
 import re
 import xlrd
 
@@ -144,18 +145,18 @@ def Registra(Archivo):
 def Modos(arg):
     
     Modos={
-            1: "a",
-            2: "b",
-            3: "c",
-            4: "d",
-            5: "d",
-            6: "e",
-            7: "f"
+            "#$": 1, #IMM
+            "DIR": 2 , #DIR
+            "INDX": 3, #INDX
+            "INDY" : 4, #INDY
+            "$": 5, #EXT
+            "INH": 6, #INH
+            "REL" : 7 #REL
             }
     
-    print("\n",arg)
-      
-    return 0
+    m=Modos.get(arg)
+                    
+    return m
 
 #Método que compara los valores del registro con los mnemónicos
 def Compara():
@@ -168,19 +169,28 @@ def Compara():
             b=Mnem[j][0]
             #Si coincide, añadimos los valores según el modo de direccionamiento
             if a==b:
-                Modos(Reg[i][2])
-                print("\nCoincidencia en ",j)
-
+                L.append(str(Mnem[j][Modos(Reg[i][2])]))
+                L.append(Reg[i][1])
+    return L
+               
+ 
+def Imprime(L):
+    
+    for i in range(len(L)):
+        
+        print("\n",int(Reg[0][1])+i,"\t",L[i],"\n")
+        
+    
 #Método que inicia el proceso
 def main():
     CargaExcel(dir_Exc)
     Registra(dir_txt)
     
-    if Reg[len(Reg)-1][0]!="END":
+    if Reg[len(Reg)-1][0]!="END|end":
         Err.append("010")
     
     print("Registro: ",Reg)
-    Compara()
-                  
+         
+    Imprime(Compara())
     
 main()
