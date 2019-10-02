@@ -114,6 +114,7 @@ def Registra(Archivo):
                 Reg[cnt-1][2]=""
                 Reg[cnt-1][3]=cnt
                 #print(Reg[cnt-1])
+                f.close()
                 return 1
                 
             #Verificamos que sea un comentario 
@@ -172,7 +173,7 @@ def Registra(Archivo):
                 Reg[cnt-1][0]=r[0]
                 Err.append(("009","Linea "+str(cnt)))
                 linea = f.readline()
-                               
+                
 #Método que regresa el valor para buscar en los Mnemónicos
 def Modos(arg): 
     Modos={
@@ -206,12 +207,12 @@ def Compara():
                 if Reg[i][2]=="None":
                     x=Separa(Mnem[j][Modos(Reg[i][1])])
                     x=x[0]+x[1]
-                    L.append(x)
+                    L.append([x,Reg[i][3]])
                     break
                 else:
                     #print("\nRegistro: ",Reg)
-                    L.append(str(Mnem[j][Modos(Reg[i][1])]))
-                    L.append(Reg[i][2])
+                    L.append([str(Mnem[j][Modos(Reg[i][1])]),Reg[i][3]])
+                    L.append([Reg[i][2],Reg[i][3]])
             else:
                 k+=1
 #Si no encontró el mnemónico, y el registro no se encuentra en palabras reservadas hay error
@@ -228,14 +229,13 @@ def Imprime(L):
     print("\n   Dir\t\t  0   1   2   3   4   5   6   7   8   9   A   B   C   D   E   F")
     print("<",int(Reg[0][2]),">\t",end="")
     for i in range(len(L)):
-        
-        punto=re.findall(r"[0-9]*.*(\.)0",L[i])
-        
+
+        punto=re.findall(r"[0-9]*.*(\.)0",L[i][0])
         if len(punto)>0:
-            L[i]=L[i][0:2]
+            L[i][0]=L[i][0][0:2]
         
-        if len(L[i])==2:
-            print(" ",L[i],end="")
+        if len(L[i][0])==2:
+            print(" ",L[i][0],end="")
             cnt+=1
             if cnt==16*(n+1):
                 n+=1
@@ -243,29 +243,34 @@ def Imprime(L):
 
             
         else:
-            print(" ",L[i][0:2],end="")
+            print(" ",L[i][0][0:2],end="")
             j+=1
             cnt+=1
             if cnt==16*(n+1):
                 n+=1
                 print("\n<",int(Reg[0][2])+10*n,">\t",end="")
                 
-            print(" ",L[i][2:4],end="")
+            print(" ",L[i][0][2:4],end="")
             cnt+=1
             if cnt==16*(n+1):
                 n+=1
                 print("\n<",int(Reg[0][2])+10*n,">\t",end="")
 
 def ImprimeErrores():
-    print("\n\nErrores: ",Err)       
+    print("\n\nErrores: \n")   
+    for i in range(len(Err)):
+        print(Err[1][1]," ",Errores.get(Err[i][0]))
             
 #Método que inicia el proceso
 def main():
+    
     CargaExcel(dir_Exc)
+    
     if Registra(dir_txt)==1:
         print("Registro cargado correctamente")
     else:
         print("Error al cargar el archivo con el registro")
+        return 0
     
     for i in range (len(Reg)):  
         RemueveL(Reg[i])
@@ -274,28 +279,34 @@ def main():
     if Reg[len(Reg)-1][0]!="END" and Reg[len(Reg)-1][0].lower()!="end":
         Err.append("010")
         
-    #print("\nConstantes: ",Const)
-    #print("\nVariables: ",Vars)
-    #print("\nRegistro: ",Reg)
+    print("\nConstantes: ",Const)
+    print("\nVariables: ",Vars)
+    print("\nRegistro: ",Reg)
     c=Compara()
-    print("Comparaciones: ", c)
+    print("\nComparaciones: ", c)
     for i in range(len(c)):
+        x=re.findall(r"[G-Zg-z]+",c[i][0])
+
+        if c[i][0] in Const and len(x)!=0:
+            c[i][0]=Const.get(c[i][0])
+            
+        elif c[i][0] in Vars and len(x)!=0:
+            c[i]=Vars.get(c[i][0])
+            
+        elif c[i][0] not in Const and len(x)!=0:
+            
+            Err.append(("001","Linea "+ str(c[i][1])))
+            Err.append(("003","Linea "+ str(c[i][1])))
         
-        x=re.findall(r"[G-Zg-z]+",c[i])
-        
-        if c[i] in Const and len(x)!=0:
-            c[i]=Const.get(c[i])
+        elif c[i][0] not in Vars and len(x)!=0:
             
-        elif c[i] in Vars and len(x)!=0:
-            c[i]=Vars.get(c[i])
+            Err.append(("002","Linea "+ str(c[i][1])))
+            Err.append(("003","Linea "+ str(c[i][1])))
             
-        elif c[i] not in Const and len(x)!=0 and c[i][2]!="None":
-            Err.append(("001","Linea"))
-            print("Error de Constantes y Variables")
+        elif c[i][0] not in Const and c[i][0] not in Vars and len(x)!=0:
             
-        elif c[i] not in Vars and len(x)!=0 and c[i][2]!="None":
-            Err.append(("002","Linea "))
-            print("Error de Constantes y Variables")
+            Err.append(("003","Linea "+ str(c[i][1])))
+            print("Etiqueta inexistente")
         
             
    
