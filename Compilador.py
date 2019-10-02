@@ -257,10 +257,11 @@ def Imprime(L):
                 print("\n<",int(Reg[0][2])+10*n,">\t",end="")
 
 def ImprimeErrores():
-    print("\n\nErrores: \n")   
-    for i in range(len(Err)):
-        print(Err[1][1]," ",Errores.get(Err[i][0]))
-            
+         print("\n\nErrores: \n")   
+         for i in range(len(Err)):
+                  print("\033[1;31m ",Err[i][1]," ","\033[1;32m",Errores.get(Err[i][0]))
+
+
 #Método que inicia el proceso
 def main():
     
