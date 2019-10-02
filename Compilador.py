@@ -76,8 +76,12 @@ def Remueve(X):
 
 #Método que separa los números de los símbolos
 def Separa(arg):
-    s=re.split("(\$)|(\#\$)|(\#)",arg)
+    s=re.split("(\$)|(\#\$)|(\#)|(\s)",arg)
     Remueve(s)
+    #print(s)
+    if len(s)==0:
+        s=""
+        
     return s
    
 def Registra(Archivo):
@@ -87,6 +91,10 @@ def Registra(Archivo):
         linea = f.readline()
         cnt=0
         while linea:
+            Lista(Reg)
+            #print(Reg,"\n",cnt)
+            for i in range(4):
+                Lista(Reg[cnt])
             #Separamos los comentarios 
             end=re.findall(r"end|END",linea)
             Com=re.findall(r"((^\*))", linea) 
@@ -96,11 +104,18 @@ def Registra(Archivo):
             Cons=re.findall(r".*(\s|\t)(EQU|equ)(\s|\t)(\$(10)[A-Fa-f0-9]{2})",linea)
             #Encontramos el primer END para regresar el registro
             if len(end)!=0:
-                
+                cnt+=1
                 #print(cnt,"FIN")
                 r=Remueve(re.split("(\s)+",linea))
-                Reg.append(r)
-                break
+                Lista(Reg)
+                #print(Reg,"\n",cnt)
+                Reg[cnt-1][0]=r[0]
+                Reg[cnt-1][1]=""
+                Reg[cnt-1][2]=""
+                Reg[cnt-1][3]=cnt
+                #print(Reg[cnt-1])
+                return 1
+                
             #Verificamos que sea un comentario 
             elif len(Com)!=0:
 
@@ -128,13 +143,25 @@ def Registra(Archivo):
             #Verificamos que cuente con al menos un espacio
             elif len(Esp)!=0:
                 r=Remueve(re.split("(\s)+",linea))
-                s=Separa(r[1])
+                if len(r)!=1:
+                    s=Separa(r[1])
+                    r[1]=s[1]
+                    r.append(s[0])
                 cnt+=1
-                r[1]=s[1]
-                r.append(s[0])
+
                 r.append(cnt)
-                #print(cnt,"Gud",linea)  
-                Reg.append(r)
+                #print(cnt,"Gud",r)  
+                Reg[cnt-1][0]=r[0]
+                #print(len(r),Reg[cnt-1])
+                if len(r)<3:
+                    Reg[cnt-1][1]="None"
+                    Reg[cnt-1][2]="None"
+                    Reg[cnt-1][3]=r[1]
+                else:
+                    Reg[cnt-1][1]=r[2]
+                    Reg[cnt-1][2]=r[1]
+                    Reg[cnt-1][3]=r[3]
+                #print(Reg[cnt-1])
                 linea = f.readline()
             
             #Si no hay espacio guardamos un error   
@@ -142,25 +169,23 @@ def Registra(Archivo):
                 cnt+=1
                 r=Remueve(re.split("(\s)+",linea))
                 r.append(cnt)
-                Reg.append(r)
+                Reg[cnt-1][0]=r[0]
                 Err.append(("009","Linea "+str(cnt)))
                 linea = f.readline()
                                
 #Método que regresa el valor para buscar en los Mnemónicos
-def Modos(arg):
-    
+def Modos(arg): 
     Modos={
             "#$": 1, #IMM
             "$": 2 , #DIR
             "INDX": 3, #INDX
             "INDY" : 4, #INDY
             "$": 5, #EXT
-            "": 6, #INH
+            "None": 6, #INH
             "REL" : 7 #REL
             }
     
-    m=Modos.get(arg)
-                    
+    m=Modos.get(arg)             
     return m
 
 #Método que compara los valores del registro con los mnemónicos
@@ -171,26 +196,22 @@ def Compara():
     for i in range(len(Reg)-1):
         a=Reg[i][0].lower()
         k=0
-        x=re.findall(r"[G-Zg-z]+",Reg[i][1])
+            
         for j in range(len(Mnem)-1):
             b=Mnem[j][0]
             
             #Si coincide, añadimos los valores según el modo de direccionamiento
             if a==b:
-                L.append(str(Mnem[j][Modos(Reg[i][2])]))
                 #Si hay coincidencias con letras superiores a F 
-                if len(x)!=0 and Reg[i][1] not in Const :
-                    
-                    Err.append(("001","Linea "+ str(Reg[i][3])))
-                    
-                elif Reg[i][1] in Const:
-                
-                    L.append(Const.get(Reg[i][1]))
-                    
+                if Reg[i][2]=="None":
+                    x=Separa(Mnem[j][Modos(Reg[i][1])])
+                    x=x[0]+x[1]
+                    L.append(x)
+                    break
                 else:
-                    
-                    L.append(Reg[i][1])
-                                    
+                    #print("\nRegistro: ",Reg)
+                    L.append(str(Mnem[j][Modos(Reg[i][1])]))
+                    L.append(Reg[i][2])
             else:
                 k+=1
 #Si no encontró el mnemónico, y el registro no se encuentra en palabras reservadas hay error
@@ -202,35 +223,84 @@ def Compara():
 def Imprime(L):
 
     j=0
+    cnt=0
+    n=0
+    print("\n   Dir\t\t  0   1   2   3   4   5   6   7   8   9   A   B   C   D   E   F")
+    print("<",int(Reg[0][2]),">\t",end="")
     for i in range(len(L)):
+        
         punto=re.findall(r"[0-9]*.*(\.)0",L[i])
         
         if len(punto)>0:
             L[i]=L[i][0:2]
         
         if len(L[i])==2:
-            print("\n",int(Reg[0][1])+i+j,"\t",L[i],"\n")
+            print(" ",L[i],end="")
+            cnt+=1
+            if cnt==16*(n+1):
+                n+=1
+                print("\n<",int(Reg[0][2])+10*n,">\t",end="")
 
             
         else:
-            print("\n",int(Reg[0][1])+i+j,"\t",L[i][0:2],"\n")
+            print(" ",L[i][0:2],end="")
             j+=1
-            print("\n",int(Reg[0][1])+i+j,"\t",L[i][2:4],"\n")
-            
+            cnt+=1
+            if cnt==16*(n+1):
+                n+=1
+                print("\n<",int(Reg[0][2])+10*n,">\t",end="")
+                
+            print(" ",L[i][2:4],end="")
+            cnt+=1
+            if cnt==16*(n+1):
+                n+=1
+                print("\n<",int(Reg[0][2])+10*n,">\t",end="")
+
+def ImprimeErrores():
+    print("\n\nErrores: ",Err)       
             
 #Método que inicia el proceso
 def main():
     CargaExcel(dir_Exc)
-    Registra(dir_txt)
+    if Registra(dir_txt)==1:
+        print("Registro cargado correctamente")
+    else:
+        print("Error al cargar el archivo con el registro")
+    
+    for i in range (len(Reg)):  
+        RemueveL(Reg[i])
+    RemueveL(Reg)
     
     if Reg[len(Reg)-1][0]!="END" and Reg[len(Reg)-1][0].lower()!="end":
         Err.append("010")
         
-    print("\nRegistro: ",Reg)
-    print("\nConstantes: ",Const)
-    print("\nVariables: ",Vars)
-    Imprime(Compara())
+    #print("\nConstantes: ",Const)
+    #print("\nVariables: ",Vars)
+    #print("\nRegistro: ",Reg)
+    c=Compara()
+    print("Comparaciones: ", c)
+    for i in range(len(c)):
+        
+        x=re.findall(r"[G-Zg-z]+",c[i])
+        
+        if c[i] in Const and len(x)!=0:
+            c[i]=Const.get(c[i])
+            
+        elif c[i] in Vars and len(x)!=0:
+            c[i]=Vars.get(c[i])
+            
+        elif c[i] not in Const and len(x)!=0 and c[i][2]!="None":
+            Err.append(("001","Linea"))
+            print("Error de Constantes y Variables")
+            
+        elif c[i] not in Vars and len(x)!=0 and c[i][2]!="None":
+            Err.append(("002","Linea "))
+            print("Error de Constantes y Variables")
+        
+            
+   
+    Imprime(c)
     
-    print("\nErrores: ",Err)
+    ImprimeErrores()
     
 main()
