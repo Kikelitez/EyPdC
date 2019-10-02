@@ -25,7 +25,7 @@ Errores={"001" : "Constante Inexistente",
 #Definimos las listas donde se guardarán los mnemónicos para compararlos con los registros leidos
 Mnem = []
 #Dirección de los archivos
-dir_txt = 'C:/Users/Kike/Desktop/Proyecto EyPC/Ejemplo.txt'   
+dir_txt = 'C:/Users/Kike/Desktop/Proyecto EyPC/Inh.txt'   
 dir_Exc = "C:/Users/Kike/Desktop/Proyecto EyPC/68HC11.xlsx"
 
 #Método que inserta una lista en una lista
@@ -49,8 +49,6 @@ def CargaExcel(Archivo):
     for rownum in range(sheet.nrows):
         v=sheet.cell(rownum, 1).value
         Lista(Mnem)
-            
-            
         if len(v)<7 and len(v)>2:
 
                 Mnem[rownum].append(sheet.cell(rownum, 1).value)
@@ -61,7 +59,7 @@ def CargaExcel(Archivo):
                 Mnem[rownum].append(sheet.cell(rownum, 14).value)
                 Mnem[rownum].append(sheet.cell(rownum, 17).value)
                 Mnem[rownum].append(sheet.cell(rownum, 20).value)
-    
+                
     RemueveL(Mnem)
    
 #Método que elimina impurezas en la regex
@@ -198,25 +196,39 @@ def Compara():
         a=Reg[i][0].lower()
         k=0
             
-        for j in range(len(Mnem)-1):
+        for j in range(len(Mnem)):
             b=Mnem[j][0]
+
             
             #Si coincide, añadimos los valores según el modo de direccionamiento
             if a==b:
                 #Si hay coincidencias con letras superiores a F 
                 if Reg[i][2]=="None":
+                    
                     x=Separa(Mnem[j][Modos(Reg[i][1])])
-                    x=x[0]+x[1]
-                    L.append([x,Reg[i][3]])
-                    break
+
+                    if len(x)>1:
+                        x=x[0]+x[1]
+                        L.append([x,Reg[i][3]])
+                    else:
+                        L.append([x[0],Reg[i][3]])
+                        break
                 else:
                     #print("\nRegistro: ",Reg)
-                    L.append([str(Mnem[j][Modos(Reg[i][1])]),Reg[i][3]])
-                    L.append([Reg[i][2],Reg[i][3]])
+                    
+                    if Mnem[j][Modos(Reg[i][1])]=="-- ":
+
+                        Err.append(("006","Linea "+str(Reg[i][3])))
+                        break
+                        
+                    else:
+                        L.append([str(Mnem[j][Modos(Reg[i][1])]),Reg[i][3]])
+                        L.append([Reg[i][2],Reg[i][3]])
+                    
             else:
                 k+=1
 #Si no encontró el mnemónico, y el registro no se encuentra en palabras reservadas hay error
-        if k==144 and Reg[i][0] not in Reser:
+        if k==145 and Reg[i][0] not in Reser:
             Err.append(("004","Linea "+ str(Reg[i][3])))
     return L
                
@@ -257,11 +269,10 @@ def Imprime(L):
                 print("\n<",int(Reg[0][2])+10*n,">\t",end="")
 
 def ImprimeErrores():
-         print("\n\nErrores: \n")   
-         for i in range(len(Err)):
-                  print("\033[1;31m ",Err[i][1]," ","\033[1;32m",Errores.get(Err[i][0]))
-
-
+    print("\n\nErrores: \n")   
+    for i in range(len(Err)):
+        print("\033[1;31m ",Err[i][1]," ","\033[1;32m",Errores.get(Err[i][0]))
+            
 #Método que inicia el proceso
 def main():
     
@@ -313,6 +324,7 @@ def main():
    
     Imprime(c)
     
-    ImprimeErrores()
+    if(len(Err)!=0):
+        ImprimeErrores()
     
 main()
