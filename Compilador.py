@@ -25,7 +25,7 @@ Errores={"001" : "Constante Inexistente",
 #Definimos las listas donde se guardarán los mnemónicos para compararlos con los registros leidos
 Mnem = []
 #Dirección de los archivos
-dir_txt = 'C:/Users/Kike/Desktop/Proyecto EyPC/Inh.txt'   
+dir_txt = 'C:/Users/Kike/Desktop/Proyecto EyPC/Dir.txt'   
 dir_Exc = "C:/Users/Kike/Desktop/Proyecto EyPC/68HC11.xlsx"
 
 #Método que inserta una lista en una lista
@@ -173,18 +173,23 @@ def Registra(Archivo):
                 linea = f.readline()
                 
 #Método que regresa el valor para buscar en los Mnemónicos
-def Modos(arg): 
+def Modos(arg,Op): 
     Modos={
             "#$": 1, #IMM
-            "$": 2 , #DIR
             "INDX": 3, #INDX
             "INDY" : 4, #INDY
-            "$": 5, #EXT
             "None": 6, #INH
             "REL" : 7 #REL
             }
-    
-    m=Modos.get(arg)             
+    #DIR
+    if arg=="$" and len(Op)<3:
+        m=2
+    #EXT
+    elif arg=="$" and len(Op)>2:
+        m=5
+    else:
+        m=Modos.get(arg)   
+        
     return m
 
 #Método que compara los valores del registro con los mnemónicos
@@ -199,14 +204,15 @@ def Compara():
         for j in range(len(Mnem)):
             b=Mnem[j][0]
 
-            
+            #print(L)
             #Si coincide, añadimos los valores según el modo de direccionamiento
             if a==b:
+                print(a)
                 #Si hay coincidencias con letras superiores a F 
                 if Reg[i][2]=="None":
                     
                     x=Separa(Mnem[j][Modos(Reg[i][1])])
-
+                    
                     if len(x)>1:
                         x=x[0]+x[1]
                         L.append([x,Reg[i][3]])
@@ -216,20 +222,29 @@ def Compara():
                 else:
                     #print("\nRegistro: ",Reg)
                     
-                    if Mnem[j][Modos(Reg[i][1])]=="-- ":
-
+                    if Mnem[j][Modos(Reg[i][1],Reg[i][2])]=="-- ":
+                        
                         Err.append(("006","Linea "+str(Reg[i][3])))
                         break
                         
                     else:
-                        L.append([str(Mnem[j][Modos(Reg[i][1])]),Reg[i][3]])
-                        L.append([Reg[i][2],Reg[i][3]])
-                    
+                        x=Separa(str(Mnem[j][Modos(Reg[i][1],Reg[i][2])]))
+
+                        if len(x)>1:
+                            x=x[0]+x[1] 
+                            print(x)
+                            L.append([x,Reg[i][3]])
+                            L.append([Reg[i][2],Reg[i][3]])
+                        else:
+                            L.append([str(Mnem[j][Modos(Reg[i][1],Reg[i][2])]),Reg[i][3]])
+                            L.append([Reg[i][2],Reg[i][3]])
+                        
             else:
                 k+=1
 #Si no encontró el mnemónico, y el registro no se encuentra en palabras reservadas hay error
         if k==145 and Reg[i][0] not in Reser:
             Err.append(("004","Linea "+ str(Reg[i][3])))
+            break
     return L
                
  
@@ -290,6 +305,7 @@ def main():
     
     if Reg[len(Reg)-1][0]!="END" and Reg[len(Reg)-1][0].lower()!="end":
         Err.append("010")
+    
         
     print("\nConstantes: ",Const)
     print("\nVariables: ",Vars)
@@ -309,16 +325,18 @@ def main():
             
             Err.append(("001","Linea "+ str(c[i][1])))
             Err.append(("003","Linea "+ str(c[i][1])))
+            break
         
         elif c[i][0] not in Vars and len(x)!=0:
             
             Err.append(("002","Linea "+ str(c[i][1])))
             Err.append(("003","Linea "+ str(c[i][1])))
-            
+            break
+        
         elif c[i][0] not in Const and c[i][0] not in Vars and len(x)!=0:
             
             Err.append(("003","Linea "+ str(c[i][1])))
-            print("Etiqueta inexistente")
+            break
         
             
    
