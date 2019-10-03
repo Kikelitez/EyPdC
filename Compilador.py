@@ -154,12 +154,17 @@ def Registra(Archivo):
             elif len(Esp)!=0:
                 
                 r=Remueve(re.split("(\s)+",linea))
-                if len(r)>1:
+                u=Remueve(re.split(",",linea))
+                #print(r)
+
                 
+                if len(r)>1:
+                    
                     s=Separa(r[1])
                     r[1]=s[1]
                     r.append(s[0])
-                
+              
+                    
                 cnt+=1
 
                 r.append(cnt)
@@ -192,11 +197,9 @@ def Registra(Archivo):
                 
 #Método que regresa el valor para buscar en los Mnemónicos
 def Modos(arg,Op): 
-
+    #print(arg,Op)
     Modos={
             "#": 1, #IMM
-            "INDX": 3, #INDX
-            "INDY" : 4, #INDY
             "None": 6, #INH
             "REL" : 7 #REL
             }
@@ -208,8 +211,22 @@ def Modos(arg,Op):
         m=2
     #EXT
     elif arg=="$" and len(Op)>2:
+        #m=5
+        w =re.split("(,)(X|Y)",Op)
+        #print(w)
+        if len(w)>1:
+            if w[2]=="X":
+                m=3 #INDX
+            elif w[2]=="Y":
+                m=4 #INDX
+        else:
+            m=5
+        
+    #    if arg[0]=="X" or arg[1]=="X": #INDX
 
-        m=5
+     #       m=3
+      #  else:
+       #     m=4 #INDY"""
     else:
 
         m=Modos.get(arg)   
@@ -232,7 +249,6 @@ def Compara():
 
             #Si coincide, añadimos los valores según el modo de direccionamiento
             if a==b:
- 
                 if Modos(Reg[i][1],Reg[i][2])==6 and Reg[i][2]=="None" and Mnem[j][Modos(Reg[i][1],Reg[i][2])]=="-- ":
                     
                     Err.append(("005","Linea "+str(Reg[i][3])))
@@ -245,15 +261,16 @@ def Compara():
                 if Reg[i][2]=="None":
                     
                     x=Separa(Mnem[j][Modos(Reg[i][1],Reg[i][2])])
-                    
+                    #print(x)                   
                     if len(x)>1:
 
                         x=x[0]+x[1]
                         L.append([x,Reg[i][3]])
 
                     else:
-
+                        
                         L.append([x[0],Reg[i][3]])
+                        #print(L)
                         break
                 else:
                     #print("\nRegistro: ",Reg)
@@ -275,10 +292,14 @@ def Compara():
                             L.append([Reg[i][2],Reg[i][3]])
                             
                         else:
-                            
                             L.append([str(Mnem[j][Modos(Reg[i][1],Reg[i][2])]),Reg[i][3]])
-                            L.append([Reg[i][2],Reg[i][3]])
-                        
+                            w=re.split("(,)(X|Y)",Reg[i][2])
+                            print(w)
+                            if len(w)>1:
+                                if (w[2]=="X" or w[2]=="Y"):
+                                    L.append([w[0],Reg[i][3]])
+                            else:
+                                L.append([Reg[i][2],Reg[i][3]])
             else:
 
                 k+=1
@@ -290,8 +311,8 @@ def Compara():
     return L
                
  
-def Imprime(L):
-
+def ImprimeHex(L):
+    print("\nImprime Hex\n")
     j=0
     cnt=0
     n=0
@@ -334,48 +355,28 @@ def Imprime(L):
                 n+=1
                 print("\n\n<",int(Reg[0][2])+10*n,">\t",end="")
 
-def ImprimeErrores():
+def Imprime(Archivo):
+    print("\nImprime formato \n")
+    with open(Archivo) as f:
     
-    print("\n\nErrores: \n")   
-    
-    for i in range(len(Err)):
-    
-        print("\033[1;31m ",Err[i][1]," ","\033[1;32m",Errores.get(Err[i][0]))
+        linea = f.readline()
+        cnt=0
+        
+        while linea:
+            cnt+=1
+            print("   ",cnt,"   A","\t\t",linea)
+
+            linea=f.readline()
             
-#Método que inicia el proceso
-def main():
+            #print("   ",cnt,"   A" ,"0000")
     
-    CargaExcel(dir_Exc)
-    
-    if Registra(dir_txt)==1:
-        
-        print("Registro cargado correctamente")
-    
-    else:
-    
-        print("Error al cargar el archivo con el registro")
-        return 0
-    
-    for i in range (len(Reg)):  
-    
-        RemueveL(Reg[i])
-    
-    RemueveL(Reg)
-    
-    if Reg[len(Reg)-1][0]!="END" and Reg[len(Reg)-1][0].lower()!="end":
-    
-        Err.append("010")
-    
-        
-    #print("\nConstantes: ",Const)
-    #print("\nVariables: ",Vars)
-    #print("\nRegistro: ",Reg)
-    
-    c=Compara()
-    #print("\nComparaciones: ", c)
+            #if linea in Reg[cnt][0]:
+            #print("   ",cnt,"   A","\t    \t","* Configura Registros********")
+
+def VerificaCyV(c):
     
     for i in range(len(c)):
-    
+ 
         x=re.findall(r"[G-Zg-z]+",c[i][0])
 
         if c[i][0] in Const and len(x)!=0:
@@ -402,13 +403,57 @@ def main():
             
             Err.append(("003","Linea "+ str(c[i][1])))
             break
+    return c
+#Método que inicia el proceso
+def main():
+    
+    CargaExcel(dir_Exc)
+    
+    if Registra(dir_txt)==1:
         
-            
+        print("Registro cargado correctamente")
+    
+    else:
+    
+        print("Error al cargar el archivo con el registro")
+        return 0
+    
+    for i in range (len(Reg)):  
+    
+        RemueveL(Reg[i])
+    
+    RemueveL(Reg)
+    if Reg[len(Reg)-1][0]!="END" and Reg[len(Reg)-1][0].lower()!="end":
+    
+        Err.append("010")
+    
+        
+    #print("\nConstantes: ",Const)
+    #print("\nVariables: ",Vars)
+    #print("\nRegistro: ",Reg)
+    
+    c=Compara()
+    #print("\nComparaciones: ", c)
+    c=VerificaCyV(c)
    
-    Imprime(c)
+    ImprimeHex(c)
+    
+    print("\n\n")
+    #Imprime(dir_txt)
     
     if(len(Err)!=0):
 
         ImprimeErrores()
+        
+        
+def ImprimeErrores():
     
+    print("\n\nErrores: \n")   
+    
+    for i in range(len(Err)):
+    
+        print("\033[1;31m ",Err[i][1]," ","\033[1;32m",Errores.get(Err[i][0]))
+
+    return 1     
+
 main()
