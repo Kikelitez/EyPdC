@@ -104,7 +104,7 @@ def Registra(Archivo):
                 Lista(Reg[cnt])
             #Separamos los comentarios 
             end=re.findall(r"end|END",linea)
-            Com=re.findall(r"((^\*))", linea) 
+            Com=re.findall(r"((^\*)|^\s(\s*\t*)(\W))", linea) 
             Esp=re.findall(r"(^\s(\s*\t*)[A-Za-z]*)", linea)
             #Separamos las constantes y variables en el registro
             Var=re.findall(r".*(\s|\t)(EQU|equ)(\s|\t)(\$(00)[A-Fa-f0-9]{2})",linea)
