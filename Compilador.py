@@ -102,9 +102,21 @@ def Registra(Archivo):
             for i in range(4):
             
                 Lista(Reg[cnt])
-            #Separamos los comentarios 
+                  
+            #Ignoramos lineas en blanco
+            while not linea.strip():
+                cnt+=1
+                Lista(Reg)
+                for i in range(4):
+                    Lista(Reg[cnt])
+                    
+                linea = f.readline()
+         
+            #Verificamos que el registro tenga un end para terminar de leer
             end=re.findall(r"end|END",linea)
-            Com=re.findall(r"((^\*)|^\s(\s*\t*)(\W))", linea) 
+            #Separamos los comentarios
+            Com=re.findall(r"((^\*)|\W+(\s)+\W+)", linea) 
+            #Verificamos que cada instrucción cuente con al menos un espacio relativo al margen
             Esp=re.findall(r"(^\s(\s*\t*)[A-Za-z]*)", linea)
             #Separamos las constantes y variables en el registro
             Var=re.findall(r".*(\s|\t)(EQU|equ)(\s|\t)(\$(00)[A-Fa-f0-9]{2})",linea)
