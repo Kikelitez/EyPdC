@@ -25,8 +25,8 @@ Errores={"001" : "Constante Inexistente",
 #Definimos las listas donde se guardarán los mnemónicos para compararlos con los registros leidos
 Mnem = []
 #Dirección de los archivos
-dir_txt = 'C:/Users/Kike/Desktop/Proyecto EyPC/Ejemplo.txt'   
-dir_Exc = "C:/Users/Kike/Desktop/Proyecto EyPC/68HC11.xlsx"
+dir_txt = 'C:/Users/KevFS/OneDrive/Escritorio/Ejemplo.txt'   
+dir_Exc = "C:/Users/KevFS/OneDrive/Escritorio/EyPdC-master/68HC11.xlsx"
 
 #Método que inserta una lista en una lista
 def Lista(lis):
@@ -115,12 +115,12 @@ def Registra(Archivo):
             #Verificamos que el registro tenga un end para terminar de leer
             end=re.findall(r"end|END",linea)
             #Separamos los comentarios
-            Com=re.findall(r"((^\*)|\W+(\s)+\W+)", linea) 
+            Com=re.findall(r"((^\*)|\W+(\s|\t)+\W+)", linea) 
             #Verificamos que cada instrucción cuente con al menos un espacio relativo al margen
             Esp=re.findall(r"(^\s(\s*\t*)[A-Za-z]*)", linea)
             #Separamos las constantes y variables en el registro
-            Var=re.findall(r".*(\s|\t)(EQU|equ)(\s|\t)(\$(00)[A-Fa-f0-9]{2})",linea)
-            Cons=re.findall(r".*(\s|\t)(EQU|equ)(\s|\t)(\$(10)[A-Fa-f0-9]{2})",linea)
+            Var=re.findall(r".*(\s)(EQU|equ)(\s)(\$(00)[A-Fa-f0-9]{2})",linea)
+            Cons=re.findall(r".*(\s)(EQU|equ)(\s)(\$(1[0-9])[A-Fa-f0-9]{2})",linea)
             #Encontramos el primer END para regresar el registro
             if len(end)!=0:
                 
@@ -230,7 +230,7 @@ def Modos(arg,Op):
             if w[2]=="X":
                 m=3 #INDX
             elif w[2]=="Y":
-                m=4 #INDX
+                m=4 #INDY
         else:
             m=5
         
@@ -288,27 +288,32 @@ def Compara():
                     #print("\nRegistro: ",Reg)
                     
                     if Mnem[j][Modos(Reg[i][1],Reg[i][2])]=="-- ":
-                        
+                        #print(Mnem[j][Modos(Reg[i][1],Reg[i][2])])
                         Err.append(("006","Linea "+str(Reg[i][3])))
                         break
                         
                     else:
 
                         x=Separa(str(Mnem[j][Modos(Reg[i][1],Reg[i][2])]))
-
+                        #print(x)
                         if len(x)>1:
                             
                             x=x[0]+x[1] 
                             #print(x)
                             L.append([x,Reg[i][3]])
-                            L.append([Reg[i][2],Reg[i][3]])
+                            w=re.split("(,)(Y)",Reg[i][2])
+                            if w[2]=="Y":
+                                L.append([w[0],Reg[i][3]])
+                            else:
+                                L.append([Reg[i][2],Reg[i][3]])
                             
                         else:
+                            #print(Modos(Reg[i][1],Reg[i][2]))
                             L.append([str(Mnem[j][Modos(Reg[i][1],Reg[i][2])]),Reg[i][3]])
-                            w=re.split("(,)(X|Y)",Reg[i][2])
-                            print(w)
+                            w=re.split("(,)(X)",Reg[i][2])
+                            #print(w)
                             if len(w)>1:
-                                if (w[2]=="X" or w[2]=="Y"):
+                                if w[2]=="X":
                                     L.append([w[0],Reg[i][3]])
                             else:
                                 L.append([Reg[i][2],Reg[i][3]])
@@ -440,8 +445,8 @@ def main():
         Err.append("010")
     
         
-    #print("\nConstantes: ",Const)
-    #print("\nVariables: ",Vars)
+    print("\nConstantes: ",Const)
+    print("\nVariables: ",Vars)
     #print("\nRegistro: ",Reg)
     
     c=Compara()
