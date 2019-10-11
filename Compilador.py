@@ -1,5 +1,7 @@
 # -*- coding: utf-8 -*-
 import re
+from typing import Optional, List, Any, Union
+
 import xlrd
 
 #Array para guardar los errores durante el proceso
@@ -38,7 +40,21 @@ def Lista(lis):
 def RemueveL(lista):
     while [] in lista: lista.remove([])
     return lista
-    
+
+def CleanLista(Lista): #Quita las sublistas vacias de la lista de registro
+    m = [i for i, x in enumerate(Lista) if x == [[], [], [], []]]
+    #print (m)
+    cnt=0
+    for j in range(len(m)):
+        if m[j]==0:
+            Lista.pop(m[j])
+            cnt+=1
+        else:
+            Lista.pop(m[j]-cnt)
+            cnt+=1
+        #print(Lista)
+    return Lista
+
 def CargaExcel(Archivo):
 
     #Abrimos el archivo para trabajar y buscamos la hoja que usaremos
@@ -107,19 +123,25 @@ def Registra(Archivo):
             while not linea.strip():
                 cnt+=1
                 Lista(Reg)
+                #print(Reg)
                 for i in range(4):
                     Lista(Reg[cnt])
-                    
+
                 linea = f.readline()
-         
+
             #Verificamos que el registro tenga un end para terminar de leer
             end=re.findall(r"end|END",linea)
             #Separamos los comentarios
-            Com=re.findall(r"((^\*)|\W+(\s|\t)+\W+)", linea) 
+            Etiqueta=re.findall(r"^[a-zA-Z]*",linea)
+            print(Etiqueta)
+            Com=re.findall(r"((^\*)|\W+(\s)+\W)", linea)
+            #print(Com)
             #Verificamos que cada instrucción cuente con al menos un espacio relativo al margen
             Esp=re.findall(r"(^\s(\s*\t*)[A-Za-z]*)", linea)
+            #print(Esp)
             #Separamos las constantes y variables en el registro
             Var=re.findall(r".*(\s)(EQU|equ)(\s)(\$(00)[A-Fa-f0-9]{2})",linea)
+            #print(Var)
             Cons=re.findall(r".*(\s)(EQU|equ)(\s)(\$(1[0-9])[A-Fa-f0-9]{2})",linea)
             #Encontramos el primer END para regresar el registro
             if len(end)!=0:
@@ -127,6 +149,7 @@ def Registra(Archivo):
                 cnt+=1
                 #print(cnt,"FIN")
                 r=Remueve(re.split("(\s)+",linea))
+                #print(Reg)
                 Lista(Reg)
                 #print(Reg,"\n",cnt)
                 Reg[cnt-1][0]=r[0]
@@ -134,6 +157,8 @@ def Registra(Archivo):
                 Reg[cnt-1][2]=""
                 Reg[cnt-1][3]=cnt
                 #print(Reg[cnt-1])
+                CleanLista(Reg)
+                print(Reg)
                 f.close()
                 
                 return 1
@@ -167,20 +192,25 @@ def Registra(Archivo):
                 
                 r=Remueve(re.split("(\s)+",linea))
                 u=Remueve(re.split(",",linea))
-                #print(r)
+                #print("R:",r)
 
                 
                 if len(r)>1:
                     
                     s=Separa(r[1])
-                    r[1]=s[1]
+                    #print(s)
+                    if len(s)>2:
+                        r[1]=s[1]+s[2]+s[3]
+                    else:
+                        r[1]=s[1]
                     r.append(s[0])
+
               
                     
                 cnt+=1
 
-                r.append(cnt)
-                #print(cnt,"Gud",r)  
+                r.append(cnt) #Aqui se agrega al registro los modos de direccionamiento Inherentes
+                #print(cnt,"Gud",r)
                 Reg[cnt-1][0]=r[0]
                 #print(len(r),Reg[cnt-1])
                 if len(r)<3:
@@ -188,6 +218,7 @@ def Registra(Archivo):
                     Reg[cnt-1][1]="None"
                     Reg[cnt-1][2]="None"
                     Reg[cnt-1][3]=r[1]
+                    #print(Reg[cnt-1][1],Reg[cnt-1][2],Reg[cnt-1][3])
                 
                 else:
                     
@@ -232,7 +263,13 @@ def Modos(arg,Op):
             elif w[2]=="Y":
                 m=4 #INDY
         else:
-            m=5
+            z=Separa(Op)
+            if len(z[0])<4:
+                #print(z)
+                #print(z[0])
+                m=2
+            else:
+                m=5
         
     #    if arg[0]=="X" or arg[1]=="X": #INDX
 
@@ -260,20 +297,19 @@ def Compara():
             b=Mnem[j][0]
 
             #Si coincide, añadimos los valores según el modo de direccionamiento
+            #print (a)
             if a==b:
                 if Modos(Reg[i][1],Reg[i][2])==6 and Reg[i][2]=="None" and Mnem[j][Modos(Reg[i][1],Reg[i][2])]=="-- ":
                     
                     Err.append(("005","Linea "+str(Reg[i][3])))
                     
                 elif Modos(Reg[i][1],Reg[i][2])!=6 and Mnem[j][Modos(Reg[i][1],Reg[i][2])]=="-- ":
-                        
                         Err.append(("006","Linea "+str(Reg[i][3])))
                         break
-                #Si hay coincidencias con letras superiores a F 
-                if Reg[i][2]=="None":
-                    
+                #Si hay coincidencias con letras superiores a F
+                if Reg[i][2]=="None": #Modo de direccionamiento Inherente
                     x=Separa(Mnem[j][Modos(Reg[i][1],Reg[i][2])])
-                    #print(x)                   
+                    #print(x)
                     if len(x)>1:
 
                         x=x[0]+x[1]
@@ -285,6 +321,7 @@ def Compara():
                         #print(L)
                         break
                 else:
+                    #print(Reg[i][0])
                     #print("\nRegistro: ",Reg)
                     
                     if Mnem[j][Modos(Reg[i][1],Reg[i][2])]=="-- ":
@@ -298,28 +335,55 @@ def Compara():
                         #print(x)
                         if len(x)>1:
                             
-                            x=x[0]+x[1] 
-                            #print(x)
+                            x=x[0]+x[1]
                             L.append([x,Reg[i][3]])
                             w=re.split("(,)(Y)",Reg[i][2])
-                            if w[2]=="Y":
+                            #print(w)
+                            if w[2]=="Y" and len(w)>3: #Casos especiales como BRCLR
+                                z=Separa(w[3])
+                                if len(z)>1:
+                                    #print("Valor a llevar:",w[0],Reg[i][3],z[2])
+                                    L.append([w[0],Reg[i][3]])
+                                    L.append([z[2],Reg[i][3]])
+
+                            elif w[2]=="Y" and len(w)<2:
+                                #print(w[0])
                                 L.append([w[0],Reg[i][3]])
                             else:
                                 L.append([Reg[i][2],Reg[i][3]])
+                                #print("ELE",L)
+
+
                             
                         else:
                             #print(Modos(Reg[i][1],Reg[i][2]))
                             L.append([str(Mnem[j][Modos(Reg[i][1],Reg[i][2])]),Reg[i][3]])
+                            #print(Mnem[j][Modos(Reg[i][1],Reg[i][2])])
                             w=re.split("(,)(X)",Reg[i][2])
-                            #print(w)
-                            if len(w)>1:
-                                if w[2]=="X":
+                            y=re.split("(,)",Reg[i][2])
+                            #print(y)
+                            #print(len(w),w)
+                            if len(w)>3 and  w[2]=="X":
+                                #print(w)
+                                z=Separa(w[3])
+                                #print(z)
+                                if len(z)>1:
+                                    L.append([w[0],Reg[i][3]])
+                                    L.append([z[2],Reg[i][3]])
+                                else:
                                     L.append([w[0],Reg[i][3]])
                             else:
-                                L.append([Reg[i][2],Reg[i][3]])
+                                if len(y)>2:
+                                    z=Separa(y[2])
+                                    if len(z)>1:
+                                        L.append([y[0],Reg[i][3]])
+                                        L.append([z[1],Reg[i][3]])
+                                else:
+                                    L.append([Reg[i][2],Reg[i][3]])
             else:
 
                 k+=1
+        #print(L)
 #Si no encontró el mnemónico, y el registro no se encuentra en palabras reservadas hay error
         if k==145 and Reg[i][0] not in Reser:
 
