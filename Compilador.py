@@ -9,6 +9,7 @@ Err=[]
 #Creamos una lista donde se guardarán las variables y constantes. 
 Vars={}
 Const={}
+labels={}
 #Lista para guardar los mnemónicos registrados
 Reg=[]
 #Palabras reservadas
@@ -132,17 +133,18 @@ def Registra(Archivo):
             #Verificamos que el registro tenga un end para terminar de leer
             end=re.findall(r"end|END",linea)
             #Separamos los comentarios
-            Etiqueta=re.findall(r"^[a-zA-Z]*",linea)
-            print(Etiqueta)
+            label=re.findall(r"(^[A-Za-z0-9]*)",linea)
+            #print("Etiqueta:",label)
             Com=re.findall(r"((^\*)|\W+(\s)+\W)", linea)
-            #print(Com)
+            #print("Comentario:",Com)
             #Verificamos que cada instrucción cuente con al menos un espacio relativo al margen
             Esp=re.findall(r"(^\s(\s*\t*)[A-Za-z]*)", linea)
             #print(Esp)
             #Separamos las constantes y variables en el registro
             Var=re.findall(r".*(\s)(EQU|equ)(\s)(\$(00)[A-Fa-f0-9]{2})",linea)
-            #print(Var)
+            #print("Variable:",Var)
             Cons=re.findall(r".*(\s)(EQU|equ)(\s)(\$(1[0-9])[A-Fa-f0-9]{2})",linea)
+            #print("Constante:",Cons)
             #Encontramos el primer END para regresar el registro
             if len(end)!=0:
                 
@@ -158,7 +160,7 @@ def Registra(Archivo):
                 Reg[cnt-1][3]=cnt
                 #print(Reg[cnt-1])
                 CleanLista(Reg)
-                print(Reg)
+                #print(Reg)
                 f.close()
                 
                 return 1
@@ -180,13 +182,18 @@ def Registra(Archivo):
                 linea = f.readline()
             #Verificamos que sea una variable    
             elif len(Var)!=0:
-                
+                cnt+=1
                 r=Remueve(re.split("(\s)+",linea))
                 r[2]=Separa(r[2])
                 Vars[r[0]]=r[2][1]
-                cnt+=1
                 #print(cnt,"Es Variable")
                 linea = f.readline()
+            #Verificamos que sea una etiqueta
+            elif len(label)!=0 and label[0]!='':
+                cnt+=1
+                r=Remueve(re.split("(\n)+",linea))
+                labels[r[0]]=cnt
+                linea=f.readline()
             #Verificamos que cuente con al menos un espacio
             elif len(Esp)!=0:
                 
@@ -511,6 +518,7 @@ def main():
         
     print("\nConstantes: ",Const)
     print("\nVariables: ",Vars)
+    print("\nEtiquetas: ",labels)
     #print("\nRegistro: ",Reg)
     
     c=Compara()
@@ -538,3 +546,4 @@ def ImprimeErrores():
     return 1     
 
 main()
+
