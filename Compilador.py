@@ -525,7 +525,9 @@ def main():
     #print("\nComparaciones: ", c)
     c=VerificaCyV(c)
    
-    ImprimeHex(c)
+        
+    ArchivoListado(c)
+    ArchivoObj(c)
     
     print("\n\n")
     #Imprime(dir_txt)
@@ -534,7 +536,89 @@ def main():
 
         ImprimeErrores()
         
+ def ArchivoListado(L):
+
+    file = open("C:/Users/Kike/Desktop/Proyecto EyPC/Listado.lst", "w")  
+    for i in range(len(Todo)):
+        file.write(str(Todo[i]))
+    
+    file.write("\n")
+
+    cnt=0
+    n=0
+
+    for j in range(len(L)):
+
+
+        if len(L[j][0])==2:
         
+            cnt+=1
+            file.write(str(L[j][0]))
+            if cnt==16*(n+1):
+                file.write("\n")
+                n+=1
+                
+        else:
+            
+            j+=1
+            cnt+=1
+            #file.write(str(L[i][0][0:2]))
+            if cnt==16*(n+1):
+            
+                n+=1
+                
+            cnt+=1
+            #file.write(str(L[j][0][2:4]))
+            if cnt==16*(n+1):
+                file.write("\n")
+                n+=1
+                
+    file.close()
+                
+#Método que imprime como en el archivo .hex
+def ArchivoObj(L):
+    j=0
+    cnt=0
+    n=0
+    print("\nCódigo Objeto")
+    
+    file = open("C:/Users/Kike/Desktop/Proyecto EyPC/Proyecto.s19", "w")
+
+    print("\n<",Reg[0][1],">\t",end="")
+
+    for i in range(len(L)):
+
+        
+        if len(L[i][0])==2:
+            
+            print(" ",L[i][0],end="")
+            cnt+=1
+            file.write(str(L[i][0][0:2]))
+            if cnt==16*(n+1):
+                file.write("\n")
+                n+=1
+                print("\n\n<",int(Reg[0][1])+10*n,">\t",end="")
+                
+        else:
+            
+            print(" ",L[i][0][0:2],end="")
+            j+=1
+            cnt+=1
+            file.write(str(L[i][0][0:2]))
+            if cnt==16*(n+1):
+            
+                n+=1
+                print("\n\n<",int(Reg[0][1])+10*n,">\t",end="")
+                
+            print(" ",L[i][0][2:4],end="")
+            cnt+=1
+            file.write(str(L[i][0][2:4]))
+            if cnt==16*(n+1):
+                file.write("\n")
+                n+=1
+                print("\n\n<",int(Reg[0][1])+10*n,">\t",end="")
+                
+    file.close()
 def ImprimeErrores():
     
     print("\n\nErrores: \n")   
