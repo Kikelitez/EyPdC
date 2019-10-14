@@ -30,7 +30,7 @@ Mnem = []
 #Dirección de los archivos
 dir_txt = 'C:/Users/KevFS/OneDrive/Escritorio/Ejemplo.txt'   
 dir_Exc = "C:/Users/KevFS/OneDrive/Escritorio/EyPdC-master/68HC11.xlsx"
-
+Ext_txt=  "C:/Users/KevFS/OneDrive/Escritorio/EyPdC-master/Extendido.txt"
 #Método que inserta una lista en una lista
 def Lista(lis):
     
@@ -41,7 +41,20 @@ def Lista(lis):
 def RemueveL(lista):
     while [] in lista: lista.remove([])
     return lista
-
+def BuscarMnem(M,Archivo):
+    tp="REL"
+    with open(Archivo) as f:
+        linea = f.readline()
+        while linea:
+            r=re.findall(r"[a-zA-Z]*",linea)
+            #print(r[0])
+            if M==r[0]:
+                #print("Es extendido:",M)
+                tp="EXT"
+                break
+            linea=f.readline()
+        f.close()
+    return tp
 def CleanLista(Lista): #Quita las sublistas vacias de la lista de registro
     m = [i for i, x in enumerate(Lista) if x == [[], [], [], []]]
     #print (m)
@@ -55,6 +68,64 @@ def CleanLista(Lista): #Quita las sublistas vacias de la lista de registro
             cnt+=1
         #print(Lista)
     return Lista
+def EncuentraEtiqueta(Diccionario,Key): #Encuentra la etiqueta del mnemonico relativo, si existe devuelve su posicion en el archivo, si no devuelve -1
+    cons=-1
+    for k in Diccionario:
+        if Key==k:
+            cons=Diccionario[k]
+            break
+    return cons
+def JumpBack(Pos,L):
+    cons=1
+    fl=1.5
+    #print("Lista:",L)
+    for SubL in L:
+        for j in SubL:
+            if SubL[1]>Pos:
+                z=re.split("(\.)",SubL[0])
+                if len(z)>2:
+                    z=z[0]
+                if len(SubL[0])<4 or (len(z)<3 and len(z)>1):
+                    cons+=1
+                    #print(cons)
+                else:
+                    cons=cons+2
+                break
+    #print("Distancia entre la etiqueta y mnemonico:",cons)
+    cons=twoComplement(cons,8)
+    exi=hex(cons)
+    exi=re.split("(x)",exi)
+    exi=exi[2]
+    #print (exi)
+    return exi.upper()
+def JumpForward(poo,L):
+    cons=0
+    fl=1.5
+    #print("Lista:",L,"\nPosicion:",poo)
+    for SubL in L:
+        for j in SubL:
+            if SubL[1]<poo:
+                z=re.split("(\.)",SubL[0])
+                if len(z)>2:
+                    z=z[0]
+                if len(SubL[0])<4 or (len(z)<3 and len(z)>1):
+                    cons+=1
+                else:
+                    cons=cons+2
+                break
+                #else:
+                 #   cons=cons+2
+                  #  break
+    #print("Distancia entre la etiqueta y mnemonico:",cons)
+    exi=hex(cons)
+    exi=re.split("(x)",exi)
+    exi=exi[2]
+    #print(exi)
+    return exi.upper()
+
+
+def twoComplement(number, nBits):
+    return (-number) & (2**nBits - 1)
 
 def CargaExcel(Archivo):
 
@@ -206,11 +277,18 @@ def Registra(Archivo):
                     
                     s=Separa(r[1])
                     #print(s)
-                    if len(s)>2:
-                        r[1]=s[1]+s[2]+s[3]
-                    else:
-                        r[1]=s[1]
-                    r.append(s[0])
+                    while (s[0]=="#$" or s[0]=="$" or s[0]=="#"):
+                        if len(s)>2:
+                            r[1]=s[1]+s[2]+s[3]
+                            r.append(s[0])
+                            break
+                        else:
+                            #print(s[1])
+                            r[1]=s[1]
+                            #print(r[1])
+                            r.append(s[0])
+                            break
+
 
               
                     
@@ -218,9 +296,20 @@ def Registra(Archivo):
 
                 r.append(cnt) #Aqui se agrega al registro los modos de direccionamiento Inherentes
                 #print(cnt,"Gud",r)
+                #print(len(r))
                 Reg[cnt-1][0]=r[0]
-                #print(len(r),Reg[cnt-1])
-                if len(r)<3:
+                if len(r)==3:
+                    Reg[cnt-1][1]=BuscarMnem(Reg[cnt-1][0],Ext_txt)
+                    Reg[cnt-1][2]=r[1]
+                    Reg[cnt-1][3]=r[2]
+                    #print(Reg[cnt-1])
+                elif len(r)==5:
+                    Reg[cnt-1][1]=r[3]
+                    Reg[cnt-1][2]=r[1]+"|"+r[2]
+                    #print(Reg[cnt-1][2])
+                    Reg[cnt-1][3]=r[4]
+
+                elif len(r)<3:
                 
                     Reg[cnt-1][1]="None"
                     Reg[cnt-1][2]="None"
@@ -254,12 +343,12 @@ def Modos(arg,Op):
             "REL" : 7 #REL
             }
     if arg=="#$":
-        m=1
-    #DIR
+        m=1 #IMM
+    elif arg=="EXT": #EXT
+        m=5
     elif arg=="$" and len(Op)<3:
     
-        m=2
-    #EXT
+        m=2 #DIR
     elif arg=="$" and len(Op)>2:
         #m=5
         w =re.split("(,)(X|Y)",Op)
@@ -276,7 +365,7 @@ def Modos(arg,Op):
                 #print(z[0])
                 m=2
             else:
-                m=5
+                m=5 #EXT
         
     #    if arg[0]=="X" or arg[1]=="X": #INDX
 
@@ -290,29 +379,30 @@ def Modos(arg,Op):
     return m
 
 #Método que compara los valores del registro con los mnemónicos
-def Compara():
-    #Lista donde se guardan los valores de la comparación
-    L=[]
+def Compara(L,Reg):
+    #print(len(Reg))
     #Compara los mnemónicos del registro con los del Excel
     for i in range(len(Reg)-1):
 
         a=Reg[i][0].lower()
         k=0
-            
+        #print(Reg[i],"Iteracion:",i)
         for j in range(len(Mnem)):
 
             b=Mnem[j][0]
 
             #Si coincide, añadimos los valores según el modo de direccionamiento
-            #print (a)
             if a==b:
+                #print(Modos(Reg[i][1],Reg[i][2]))
                 if Modos(Reg[i][1],Reg[i][2])==6 and Reg[i][2]=="None" and Mnem[j][Modos(Reg[i][1],Reg[i][2])]=="-- ":
-                    
                     Err.append(("005","Linea "+str(Reg[i][3])))
-                    
+                    k+=1
+                    break
                 elif Modos(Reg[i][1],Reg[i][2])!=6 and Mnem[j][Modos(Reg[i][1],Reg[i][2])]=="-- ":
-                        Err.append(("006","Linea "+str(Reg[i][3])))
-                        break
+                    print (Mnem[j][Modos(Reg[i][1],Reg[i][2])])
+                    Err.append(("006","Linea "+str(Reg[i][3])))
+                    k+=1
+                    break
                 #Si hay coincidencias con letras superiores a F
                 if Reg[i][2]=="None": #Modo de direccionamiento Inherente
                     x=Separa(Mnem[j][Modos(Reg[i][1],Reg[i][2])])
@@ -327,6 +417,52 @@ def Compara():
                         L.append([x[0],Reg[i][3]])
                         #print(L)
                         break
+                elif Reg[i][1]=="REL": #Modo de direccionamiento Relativo
+                    #print(Mnem[j][Modos(Reg[i][1],Reg[i][2])])
+                    x=Separa(str(Mnem[j][Modos(Reg[i][1],Reg[i][2])]))
+                    #print(labels)
+                    L.append([x[0],Reg[i][3]])
+                    pos=EncuentraEtiqueta(labels,Reg[i][2])
+                    #print ("Posicion",pos)
+                    if pos!=-1:
+                        if pos < Reg[i][3]:
+                            Hexi=JumpBack(pos,L)
+                            L.append([Hexi,Reg[i][3]])
+                        else:
+                            #print("L:",L[i+2:])#,Reg[i:])
+                            Ln = L.index([x[0], Reg[i][3]])
+                            # print(L[Ln+1:])
+                            RegN = Reg.index([Reg[i][0], Reg[i][1], Reg[i][2], Reg[i][3]])
+                            # print(Reg[RegN+1:])
+                            NewL = Compara(L[Ln + 1:], Reg[RegN + 1:])
+                            Hexi = JumpForward(pos, NewL)
+                            L.append([Hexi, Reg[i][3]])
+                    else:
+                        Err.append(("003","Linea "+str(Reg[i][3])))
+                    break
+                elif Reg[i][1]=="EXT":
+                    #print(Mnem[j][Modos(Reg[i][1],Reg[i][2])])
+                    x=Separa(str(Mnem[j][Modos(Reg[i][1],Reg[i][2])]))
+                    #print(labels)
+                    L.append([x[0],Reg[i][3]])
+                    pos=EncuentraEtiqueta(labels,Reg[i][2])
+                    #print ("Posicion",pos)
+                    if pos!=-1:
+                        if pos < Reg[i][3]:
+                            Hexi=JumpBack(pos,L)
+                            L.append([Hexi,Reg[i][3]])
+                        else:
+                            Ln = L.index([x[0], Reg[i][3]])
+                            # print(L[Ln+1:])
+                            RegN = Reg.index([Reg[i][0], Reg[i][1], Reg[i][2], Reg[i][3]])
+                            # print(Reg[RegN+1:])
+                            NewL = Compara(L[Ln + 1:], Reg[RegN + 1:])
+                            Hexi = JumpForward(pos, NewL)
+                            L.append([Hexi, Reg[i][3]])
+                    else:
+                        Err.append(("003", "Linea " + str(Reg[i][3])))
+                    break
+
                 else:
                     #print(Reg[i][0])
                     #print("\nRegistro: ",Reg)
@@ -335,7 +471,6 @@ def Compara():
                         #print(Mnem[j][Modos(Reg[i][1],Reg[i][2])])
                         Err.append(("006","Linea "+str(Reg[i][3])))
                         break
-                        
                     else:
 
                         x=Separa(str(Mnem[j][Modos(Reg[i][1],Reg[i][2])]))
@@ -348,10 +483,34 @@ def Compara():
                             #print(w)
                             if w[2]=="Y" and len(w)>3: #Casos especiales como BRCLR
                                 z=Separa(w[3])
-                                if len(z)>1:
+                                #print(z)
+                                if len(z)>1 and len(z[2])<3:
                                     #print("Valor a llevar:",w[0],Reg[i][3],z[2])
                                     L.append([w[0],Reg[i][3]])
                                     L.append([z[2],Reg[i][3]])
+                                elif len(z)>1 and len(z[2])>3:
+                                    t=re.split("(\|)",z[2])
+                                    if len(t)>2:
+                                        L.append([w[0],Reg[i][3]])
+                                        L.append([t[0],Reg[i][3]])
+                                        pos = EncuentraEtiqueta(labels,t[2])
+                                        # print ("Posicion",pos)
+                                        if pos!=-1:
+                                            if pos < Reg[i][3]:
+                                                Hexi = JumpBack(pos, L)
+                                                L.append([Hexi, Reg[i][3]])
+                                            else:
+                                                Ln = L.index([t[0], Reg[i][3]])
+                                                # print(L[Ln+1:])
+                                                RegN = Reg.index([Reg[i][0], Reg[i][1], Reg[i][2], Reg[i][3]])
+                                                # print(Reg[RegN+1:])
+                                                NewL = Compara(L[Ln + 1:], Reg[RegN + 1:])
+                                                Hexi = JumpForward(pos, NewL)
+                                                L.append([Hexi, Reg[i][3]])
+                                        else:
+                                            Err.append(("003", "Linea " + str(Reg[i][3])))
+                                        break
+
 
                             elif w[2]=="Y" and len(w)<2:
                                 #print(w[0])
@@ -369,22 +528,66 @@ def Compara():
                             w=re.split("(,)(X)",Reg[i][2])
                             y=re.split("(,)",Reg[i][2])
                             #print(y)
-                            #print(len(w),w)
+                            #print(w)
                             if len(w)>3 and  w[2]=="X":
                                 #print(w)
                                 z=Separa(w[3])
                                 #print(z)
-                                if len(z)>1:
+                                if len(z)>1 and len(z[2])<3:
                                     L.append([w[0],Reg[i][3]])
                                     L.append([z[2],Reg[i][3]])
+                                elif len(z)>1 and len(z[2])>3:
+                                    t=re.split("(\|)",z[2])
+                                    L.append([w[0],Reg[i][3]])
+                                    L.append([t[0],Reg[i][3]])
+                                    pos = EncuentraEtiqueta(labels, t[2])
+                                    # print ("Posicion",pos)
+                                    if pos != -1:
+                                        if pos < Reg[i][3]:
+                                            Hexi = JumpBack(pos, L)
+                                            L.append([Hexi, Reg[i][3]])
+                                        else:
+                                            #print("L:",L)#,Reg[i:])
+                                            Ln=L.index([t[0],Reg[i][3]])
+                                            #print(L[Ln+1:])
+                                            RegN=Reg.index([Reg[i][0],Reg[i][1],Reg[i][2],Reg[i][3]])
+                                            #print(Reg[RegN+1:])
+                                            NewL=Compara(L[Ln+1:], Reg[RegN+1:])
+                                            Hexi=JumpForward(pos, NewL)
+                                            L.append([Hexi, Reg[i][3]])
+                                    else:
+                                        Err.append(("003", "Linea " + str(Reg[i][3])))
+                                    break
+
                                 else:
                                     L.append([w[0],Reg[i][3]])
                             else:
                                 if len(y)>2:
                                     z=Separa(y[2])
-                                    if len(z)>1:
+                                    if len(z)>1 and len(z[1])<3:
                                         L.append([y[0],Reg[i][3]])
                                         L.append([z[1],Reg[i][3]])
+                                    elif len(z)>1 and len(z[1])>3:
+                                        t=re.split("(\|)",z[1])
+                                        L.append([y[0],Reg[i][3]])
+                                        L.append([t[0],Reg[i][3]])
+                                        pos = EncuentraEtiqueta(labels, t[2])
+                                        # print ("Posicion",pos)
+                                        if pos != -1:
+                                            if pos < Reg[i][3]:
+                                                Hexi = JumpBack(pos, L)
+                                                L.append([Hexi, Reg[i][3]])
+                                            else:
+                                                Ln = L.index([t[0], Reg[i][3]])
+                                                # print(L[Ln+1:])
+                                                RegN = Reg.index([Reg[i][0], Reg[i][1], Reg[i][2], Reg[i][3]])
+                                                # print(Reg[RegN+1:])
+                                                NewL = Compara(L[Ln + 1:], Reg[RegN + 1:])
+                                                Hexi = JumpForward(pos, NewL)
+                                                L.append([Hexi, Reg[i][3]])
+                                        else:
+                                            Err.append(("003", "Linea " + str(Reg[i][3])))
+                                        break
                                 else:
                                     L.append([Reg[i][2],Reg[i][3]])
             else:
@@ -396,9 +599,10 @@ def Compara():
 
             Err.append(("004","Linea "+ str(Reg[i][3])))
             break
+        #print("Iteracion:",i,"\nLista:",L)
+        #print(L[i])
     return L
-               
- 
+           
 def ImprimeHex(L):
     print("\nImprime Hex\n")
     j=0
@@ -521,7 +725,8 @@ def main():
     print("\nEtiquetas: ",labels)
     #print("\nRegistro: ",Reg)
     
-    c=Compara()
+    L=[]
+    c=Compara(L,Reg)
     #print("\nComparaciones: ", c)
     c=VerificaCyV(c)
    
